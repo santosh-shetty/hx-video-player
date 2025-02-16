@@ -7,11 +7,15 @@ import serveStatic from "serve-static";
 import shopify from "./shopify.js";
 import productCreator from "./product-creator.js";
 import PrivacyWebhookHandlers from "./privacy.js";
+import {
+  CreateVideoPlayer,
+  DeleteVideoSetting,
+  EditVideoSetting,
+  GetAllVideoSettings,
+  GetVideoSettingById,
+} from "./controller/VideoSetting.js";
 
-const PORT = parseInt(
-  process.env.BACKEND_PORT || process.env.PORT || "3000",
-  10
-);
+const PORT = parseInt(process.env.BACKEND_PORT || process.env.PORT || "3000", 10);
 
 const STATIC_PATH =
   process.env.NODE_ENV === "production"
@@ -38,6 +42,56 @@ app.post(
 app.use("/api/*", shopify.validateAuthenticatedSession());
 
 app.use(express.json());
+
+app.get("/api/shopify/videos", async (req, res) => {
+  try {
+    const client = new shopify.api.clients.Graphql({
+      session: res.locals.shopify.session,
+    });
+
+    const query = `
+      query getAllVideos {
+        files(first: 10, query: "filename:*.mp4 OR filename:*.mov OR filename:*.avi OR filename:*.mkv") {
+          edges {
+            node {
+              id
+              preview {
+                image { 
+                  src
+                }
+              }
+              ... on Video {
+                sources {
+                  url
+                }
+              }
+              alt
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await client.request(query);
+
+    const videos = response?.data?.files?.edges.map((edge) => ({
+      id: edge.node.id,
+      previewImage: edge.node.preview?.image?.src || null,
+      videoUrl: edge.node.sources?.length > 0 ? edge.node.sources[0].url : null,
+      altText: edge.node.alt || "",
+    }));
+    res.status(200).json({ videos });
+  } catch (error) {
+    console.error("Error fetching videos from Shopify:", error);
+    res.status(500).json({ error: "Failed to fetch videos" });
+  }
+});
+
+app.post("/api/save-video-player-settings", CreateVideoPlayer);
+app.get("/api/video-settings", GetAllVideoSettings);
+app.get("/api/video-settings/:id", GetVideoSettingById);
+app.put("/api/video-settings/:id", EditVideoSetting);
+app.delete("/api/video-settings/:id", DeleteVideoSetting);
 
 app.get("/api/products/count", async (_req, res) => {
   const client = new shopify.api.clients.Graphql({

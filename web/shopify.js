@@ -1,12 +1,11 @@
 import { BillingInterval, LATEST_API_VERSION } from "@shopify/shopify-api";
 import { shopifyApp } from "@shopify/shopify-app-express";
-import { SQLiteSessionStorage } from "@shopify/shopify-app-session-storage-sqlite";
 import { restResources } from "@shopify/shopify-api/rest/admin/2024-10";
+import { MySQLSessionStorage } from "@shopify/shopify-app-session-storage-mysql";
+import dotenv from "dotenv";
 
-const DB_PATH = `${process.cwd()}/database.sqlite`;
+dotenv.config();
 
-// The transactions with Shopify will always be marked as test transactions, unless NODE_ENV is production.
-// See the ensureBilling helper to learn more about billing in this template.
 const billingConfig = {
   "My Shopify One-Time Charge": {
     // This is an example configuration that would do a one-time charge for $5 (only USD is currently supported)
@@ -15,9 +14,17 @@ const billingConfig = {
     interval: BillingInterval.OneTime,
   },
 };
-
+const dbUrl = process.env.SHOPIFY_APP_MYSQL_URL;
+if (!dbUrl) {
+  throw new Error("Missing SHOPIFY_APP_MYSQL_URL in environment variables");
+} else {
+  console.log("----------DB Connected-------------");
+}
 const shopify = shopifyApp({
   api: {
+    scopes: process.env.SCOPES,
+    apiKey: process.env.SHOPIFY_API_KEY,
+    apiSecretKey: process.env.SHOPIFY_API_SECRET,
     apiVersion: LATEST_API_VERSION,
     restResources,
     future: {
@@ -26,16 +33,17 @@ const shopify = shopifyApp({
       unstable_managedPricingSupport: true,
     },
     billing: undefined, // or replace with billingConfig above to enable example billing
+    // hostName: "shopify.hexagn.in",
   },
   auth: {
     path: "/api/auth",
     callbackPath: "/api/auth/callback",
+    isOnline: false,
   },
   webhooks: {
     path: "/api/webhooks",
   },
-  // This should be replaced with your preferred storage strategy
-  sessionStorage: new SQLiteSessionStorage(DB_PATH),
+  sessionStorage: new MySQLSessionStorage(dbUrl),
 });
 
 export default shopify;
