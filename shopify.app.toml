@@ -1,0 +1,29 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "3740819c48e0ffd8b0c4f661a22172a5"
+application_url = "https://salaries-coins-mechanisms-vulnerability.trycloudflare.com"
+embedded = true
+name = "HX Video Player"
+handle = "hx-video-player-4"
+
+[build]
+include_config_on_deploy = true
+dev_store_url = "hexagondigital.myshopify.com"
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2025-01"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products"
+
+[auth]
+redirect_urls = [
+  "https://salaries-coins-mechanisms-vulnerability.trycloudflare.com/auth/callback",
+  "https://salaries-coins-mechanisms-vulnerability.trycloudflare.com/auth/shopify/callback",
+  "https://salaries-coins-mechanisms-vulnerability.trycloudflare.com/api/auth/callback"
+]
+
+[pos]
+embedded = false
